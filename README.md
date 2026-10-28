@@ -1,5 +1,7 @@
 # Customer Integration Agent Kit
 
+**🔴 Live demo: https://hrutishaa.github.io/customer-integration-agent-kit/** — watch an agent sync a flaky CRM API and a CSV export with retries, schema mapping and idempotent upserts, right in your browser.
+
 [![CI](https://github.com/hrutishaa/customer-integration-agent-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/hrutishaa/customer-integration-agent-kit/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)

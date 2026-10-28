@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer Integration Agent Kit · Live Demo</title><link rel="stylesheet" href="style.css"></head><body>
+<header><h1>Customer Integration Agent Kit <span class="tag">live demo</span></h1>
+<p>Sample customer <b>Acme Outdoor Co.</b>: sync contacts from a flaky <b>mock CRM REST API</b> and a <b>CSV export</b> into one clean schema, with retries on 429/5xx, idempotent writes and a full agent log. Runs 100% in your browser, no keys.</p>
+<p><a href="https://github.com/hrutishaa/customer-integration-agent-kit">View source on GitHub →</a></p></header>
+<section class="controls">
+<label>CRM failure rate <input id="fail" type="range" min="0" max="80" value="40"> <span id="failv">40%</span></label>
+<label><input id="dup" type="checkbox" checked> Replay duplicate webhook deliveries</label>
+<button id="run">▶ Run sync</button><button id="again" class="ghost">↻ Run again (idempotency check)</button><button id="reset" class="ghost">Reset</button></section>
+<div class="grid">
+<div class="card"><h2>1 · Source: CRM API <code>GET /contacts</code></h2><pre id="crm"></pre></div>
+<div class="card"><h2>2 · Source: CSV export</h2><pre id="csv"></pre></div>
+<div class="card"><h2>3 · Field mapping</h2><table id="map"></table></div>
+<div class="card wide"><h2>4 · Agent sync log</h2><div id="stats"></div><pre id="log"></pre></div>
+<div class="card wide"><h2>5 · Resulting records (warehouse)</h2><table id="out"></table></div></div>
+<footer>Mirrors the Python <code>RestConnector</code> (exponential backoff, Retry-After) and <code>CSVConnector</code> (column allow-list) in <code>agentkit/</code>. MIT licensed.</footer>
+<script src="app.js"></script></body></html>
