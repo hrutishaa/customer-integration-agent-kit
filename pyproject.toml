@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "customer-integration-agent-kit"
+version = "0.1.0"
+description = "Forward-deployed toolkit for wiring LLM agents into customer systems: connectors, schema mapping, tool-calling, evals."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Hrutishaa Nanduti" }]
+requires-python = ">=3.12"
+dependencies = ["httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["agentkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
