@@ -2,6 +2,18 @@
 from agentkit.connectors.base import Connector, ConnectorError, Record
 from agentkit.connectors.csv_connector import CSVConnector
 from agentkit.connectors.rest import RestConnector, RetryPolicy
+from agentkit.connectors.webhook import WebhookError, WebhookReceiver, WebhookResult, sign
 
-__all__ = ["CSVConnector", "Connector", "ConnectorError", "Record", "RestConnector", "RetryPolicy"]
+__all__ = [
+    "CSVConnector",
+    "Connector",
+    "ConnectorError",
+    "Record",
+    "RestConnector",
+    "RetryPolicy",
+    "WebhookError",
+    "WebhookReceiver",
+    "WebhookResult",
+    "sign",
+]
 __version__ = "0.1.0"

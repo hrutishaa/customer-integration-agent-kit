@@ -41,6 +41,7 @@ flowchart LR
 | `Connector` | One `read` / `write` / `health_check` interface for every system |
 | `RestConnector` | httpx, timeouts, auth token from an env var, exponential backoff + jitter on 429/5xx and network errors, honors `Retry-After`, only retries POST when an `Idempotency-Key` is given |
 | `CSVConnector` | Filtered reads, append-safe writes that reject unknown columns, path-traversal guard |
+| `WebhookReceiver` | HMAC-SHA256 verified over the raw request bytes, constant-time compare, signed timestamp with a 5-minute window, replay protection that only marks events seen after the handler succeeds, zero-downtime secret rotation |
 
 ## Quickstart
 
@@ -60,6 +61,20 @@ with RestConnector("https://api.example-crm.com", token_env="CRM_API_TOKEN", dat
     open_tickets = list(crm.read("/tickets", status="open"))
 
 CSVConnector("./exports").write("open_tickets", open_tickets)
+```
+
+```python
+from agentkit import WebhookReceiver, WebhookError
+
+# secrets come from an env var; "new,old" lets you rotate without downtime
+rx = WebhookReceiver(secret_env="CRM_WEBHOOK_SECRETS")
+rx.on("ticket.created", lambda event: print("new ticket", event["data"]["id"]))
+
+def endpoint(raw_body: bytes, headers: dict) -> int:  # plug into Flask, FastAPI, etc.
+    try:
+        return rx.handle(raw_body, headers).status   # duplicates also return 200
+    except WebhookError as err:
+        return err.status                            # 401 bad signature, 400 bad payload
 ```
 
 ## Roadmap
