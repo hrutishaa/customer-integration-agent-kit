@@ -7,7 +7,7 @@ Each milestone ships with tests. Checked items are on `main`.
 - [x] `RestConnector`: httpx, timeouts, env-var auth, exponential backoff on 429/5xx, `Retry-After`, idempotency keys for POST
 - [x] `CSVConnector`: read with filters, append-safe writes, path-traversal guard
 - [x] `WebhookReceiver`: HMAC signature verification over the raw body, replay protection
-- [ ] `SQLConnector` (SQLite / Postgres via SQLAlchemy)
+- [x] `SQLConnector` (SQLite / Postgres via SQLAlchemy): schema allowlist, bound params, keyset batches, transactional writes, upsert, read-only mode
 - [ ] CRM-style connector with cursor pagination (mock "Acme CRM")
 
 ## M2: Schema mapping

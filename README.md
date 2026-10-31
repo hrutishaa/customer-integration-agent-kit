@@ -42,6 +42,7 @@ flowchart LR
 | `RestConnector` | httpx, timeouts, auth token from an env var, exponential backoff + jitter on 429/5xx and network errors, honors `Retry-After`, only retries POST when an `Idempotency-Key` is given |
 | `CSVConnector` | Filtered reads, append-safe writes that reject unknown columns, path-traversal guard |
 | `WebhookReceiver` | HMAC-SHA256 verified over the raw request bytes, constant-time compare, signed timestamp with a 5-minute window, replay protection that only marks events seen after the handler succeeds, zero-downtime secret rotation |
+| `SQLConnector` | SQLite / Postgres via SQLAlchemy Core, DB URL from an env var, table and column names checked against the live schema and every value bound (no SQL injection, even from an LLM), keyset-paginated batch reads, all-or-nothing transactional writes, idempotent upserts, `read_only` mode, single-SELECT `query()` for reports |
 
 ## Quickstart
 
@@ -77,9 +78,22 @@ def endpoint(raw_body: bytes, headers: dict) -> int:  # plug into Flask, FastAPI
         return err.status                            # 401 bad signature, 400 bad payload
 ```
 
+```python
+from agentkit import SQLConnector
+
+# e.g. postgresql+psycopg://user:pass@replica/crm, read from the env, never hard-coded
+with SQLConnector(url_env="CUSTOMER_DB_URL", read_only=True) as db:
+    print(db.schema("accounts"))                       # describe the table to an agent
+    gold = list(db.read("accounts", tier="gold"))      # streamed in 500-row batches
+    churn = db.query("SELECT region, COUNT(*) AS n FROM accounts WHERE churned = :c GROUP BY region", c=True)
+
+# nightly sync: re-running it never duplicates rows
+SQLConnector("sqlite:///warehouse.db").write("accounts", gold, upsert_on="id")
+```
+
 ## Roadmap
 
-Webhooks, SQL and CRM connectors, YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
+A CRM connector with cursor pagination, YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
