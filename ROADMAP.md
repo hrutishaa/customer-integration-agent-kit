@@ -8,7 +8,7 @@ Each milestone ships with tests. Checked items are on `main`.
 - [x] `CSVConnector`: read with filters, append-safe writes, path-traversal guard
 - [x] `WebhookReceiver`: HMAC signature verification over the raw body, replay protection
 - [x] `SQLConnector` (SQLite / Postgres via SQLAlchemy): schema allowlist, bound params, keyset batches, transactional writes, upsert, read-only mode
-- [ ] CRM-style connector with cursor pagination (mock "Acme CRM")
+- [x] `CRMConnector` with cursor pagination, incremental sync and idempotent upserts, plus an in-process mock "Acme CRM" API
 
 ## M2: Schema mapping
 - [ ] Declarative YAML field mappings (rename, cast, default, compute)

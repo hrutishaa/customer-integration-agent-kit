@@ -43,6 +43,7 @@ flowchart LR
 | `CSVConnector` | Filtered reads, append-safe writes that reject unknown columns, path-traversal guard |
 | `WebhookReceiver` | HMAC-SHA256 verified over the raw request bytes, constant-time compare, signed timestamp with a 5-minute window, replay protection that only marks events seen after the handler succeeds, zero-downtime secret rotation |
 | `SQLConnector` | SQLite / Postgres via SQLAlchemy Core, DB URL from an env var, table and column names checked against the live schema and every value bound (no SQL injection, even from an LLM), keyset-paginated batch reads, all-or-nothing transactional writes, idempotent upserts, `read_only` mode, single-SELECT `query()` for reports |
+| `CRMConnector` + mock Acme CRM | Follows opaque cursors page by page (stops on a repeated cursor or a `max_pages` cap instead of looping forever), incremental `sync()` with an `updated_since` watermark, upserts that search first and PATCH only changed fields, deterministic `Idempotency-Key` on creates so a re-run sync never duplicates, refuses ambiguous matches, and inherits 429/`Retry-After` backoff. `agentkit.mock.AcmeCRM` is a realistic in-process CRM (auth, rate limits, keyset cursors, 409/422 errors) for tests and demos |
 
 ## Quickstart
 
@@ -91,9 +92,19 @@ with SQLConnector(url_env="CUSTOMER_DB_URL", read_only=True) as db:
 SQLConnector("sqlite:///warehouse.db").write("accounts", gold, upsert_on="id")
 ```
 
+```python
+from agentkit import CRMConnector
+
+# cursor pagination + rate-limit backoff handled for you; token from the env
+with CRMConnector("https://api.acme-crm.com", token_env="ACME_TOKEN", page_size=100) as crm:
+    result = crm.sync("contacts", since=saved_watermark)    # only what changed
+    save_watermark(result.watermark)                         # resume point for next run
+    crm.write("contacts", cleaned_contacts, upsert_on="email")  # safe to re-run
+```
+
 ## Roadmap
 
-A CRM connector with cursor pagination, YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
+YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
