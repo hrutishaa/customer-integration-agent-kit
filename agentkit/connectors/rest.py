@@ -74,7 +74,7 @@ class RestConnector(Connector):
         sleep: Callable[[float], None] = time.sleep,
         data_key: str | None = None,
     ) -> None:
-        headers = {"Accept": "application/json", "User-Agent": "agentkit/0.1"}
+        headers = {"Accept": "application/json", "User-Agent": "agentkit/0.2"}
         if token_env:
             token = os.environ.get(token_env)
             if not token:

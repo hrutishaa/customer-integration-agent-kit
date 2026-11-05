@@ -11,9 +11,9 @@ Each milestone ships with tests. Checked items are on `main`.
 - [x] `CRMConnector` with cursor pagination, incremental sync and idempotent upserts, plus an in-process mock "Acme CRM" API
 
 ## M2: Schema mapping
-- [ ] Declarative YAML field mappings (rename, cast, default, compute)
-- [ ] Pydantic validation and per-record error reports
-- [ ] Mapping dry-run / diff mode
+- [x] Declarative YAML field mappings (rename, cast, default, compute)
+- [x] Pydantic validation and per-record error reports
+- [x] Mapping dry-run / diff mode
 
 ## M3: Agent
 - [ ] Expose connectors as LLM tools (JSON schema auto-generated)
