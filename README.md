@@ -1,6 +1,6 @@
 # Customer Integration Agent Kit
 
-**🔴 Live demo: https://hrutishaa.github.io/customer-integration-agent-kit/** — watch an agent sync a flaky CRM API and a CSV export with retries, schema mapping and idempotent upserts, right in your browser.
+**🔴 Live demo: https://hrutishaa.github.io/customer-integration-agent-kit/** — watch an agent sync a flaky CRM API and a CSV export with retries, YAML schema mapping (dry-run diff included) and idempotent upserts, right in your browser.
 
 [![CI](https://github.com/hrutishaa/customer-integration-agent-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/hrutishaa/customer-integration-agent-kit/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
@@ -34,7 +34,7 @@ flowchart LR
     H --> I
 ```
 
-## What works today (v0.1)
+## What works today (v0.2)
 
 | Piece | Highlights |
 |---|---|
@@ -44,6 +44,7 @@ flowchart LR
 | `WebhookReceiver` | HMAC-SHA256 verified over the raw request bytes, constant-time compare, signed timestamp with a 5-minute window, replay protection that only marks events seen after the handler succeeds, zero-downtime secret rotation |
 | `SQLConnector` | SQLite / Postgres via SQLAlchemy Core, DB URL from an env var, table and column names checked against the live schema and every value bound (no SQL injection, even from an LLM), keyset-paginated batch reads, all-or-nothing transactional writes, idempotent upserts, `read_only` mode, single-SELECT `query()` for reports |
 | `CRMConnector` + mock Acme CRM | Follows opaque cursors page by page (stops on a repeated cursor or a `max_pages` cap instead of looping forever), incremental `sync()` with an `updated_since` watermark, upserts that search first and PATCH only changed fields, deterministic `Idempotency-Key` on creates so a re-run sync never duplicates, refuses ambiguous matches, and inherits 429/`Retry-After` backoff. `agentkit.mock.AcmeCRM` is a realistic in-process CRM (auth, rate limits, keyset cursors, 409/422 errors) for tests and demos |
+| `SchemaMapper` | Declarative YAML (or a Python `MappingSpec`) renames fields, casts them (`str`, `int`, `float`, `bool`, `date`, `datetime`, `decimal`), fills defaults, and runs restricted compute expressions (`lower`, `concat`, `coalesce`, …). Each output row is checked with a Pydantic model generated from the mapping. One bad row does not sink the batch: `apply()` returns the valid records plus a per-record error report. `dry_run()` previews a field-level diff (rename, cast, default, compute, dropped columns, errors) before anything is written |
 
 ## Quickstart
 
@@ -102,9 +103,55 @@ with CRMConnector("https://api.acme-crm.com", token_env="ACME_TOKEN", page_size=
     crm.write("contacts", cleaned_contacts, upsert_on="email")  # safe to re-run
 ```
 
+```python
+from agentkit import SchemaMapper
+
+# Blank strings are missing, so defaults fill them. Compute is a restricted
+# expression (no imports, no method calls). Quote YAML yes/no if they must stay strings.
+mapper = SchemaMapper.from_yaml("""
+name: contacts
+fields:
+  email:
+    compute: "lower(strip(email_address))"
+    required: true
+  name:
+    from: full_name
+    cast: str
+    required: true
+  stage:
+    from: lifecycle
+    default: lead
+  score:
+    from: lead_score
+    cast: int
+    default: 0
+  label:
+    compute: "concat(name, ' <', email, '>')"
+""")
+
+raw = [
+    {
+        "full_name": "Maya Chen",
+        "email_address": "Maya@Trailhead.io",
+        "lifecycle": "customer",
+        "lead_score": "12",
+    },
+    {"full_name": "Riley Cho", "email_address": "riley@northwind.io", "lead_score": "n/a"},
+]
+report = mapper.apply(raw)
+report.records[0]["email"]  # maya@trailhead.io
+report.records[0]["score"]  # 12
+report.records[0]["label"]  # Maya Chen <maya@trailhead.io>
+str(report.errors[0])       # record 1: score: cannot cast 'n/a' to int
+
+print(mapper.dry_run(raw).render())  # rename, cast, default, compute, and the bad row
+```
+
+`SchemaMapper.from_file("contacts.yaml")` loads the same document from disk. Build the spec in Python with `MappingSpec` / `FieldSpec` when the mapping is not a file.
+
 ## Roadmap
 
-YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
+A tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
