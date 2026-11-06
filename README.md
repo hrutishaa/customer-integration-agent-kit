@@ -45,6 +45,8 @@ flowchart LR
 | `SQLConnector` | SQLite / Postgres via SQLAlchemy Core, DB URL from an env var, table and column names checked against the live schema and every value bound (no SQL injection, even from an LLM), keyset-paginated batch reads, all-or-nothing transactional writes, idempotent upserts, `read_only` mode, single-SELECT `query()` for reports |
 | `CRMConnector` + mock Acme CRM | Follows opaque cursors page by page (stops on a repeated cursor or a `max_pages` cap instead of looping forever), incremental `sync()` with an `updated_since` watermark, upserts that search first and PATCH only changed fields, deterministic `Idempotency-Key` on creates so a re-run sync never duplicates, refuses ambiguous matches, and inherits 429/`Retry-After` backoff. `agentkit.mock.AcmeCRM` is a realistic in-process CRM (auth, rate limits, keyset cursors, 409/422 errors) for tests and demos |
 
+| `agentkit.mapping` | Declarative YAML field mappings (rename, cast, default, compute with a `{Field}` template, never `eval`), optional Pydantic validation, per-record error reports instead of a crashed batch, and a `dry_run` that previews creates / updates / unchanged with field-level diffs before anything is written |
+
 ## Quickstart
 
 ```bash
@@ -102,9 +104,29 @@ with CRMConnector("https://api.acme-crm.com", token_env="ACME_TOKEN", page_size=
     crm.write("contacts", cleaned_contacts, upsert_on="email")  # safe to re-run
 ```
 
+```yaml
+# examples/contacts.yaml: the customer's column names live in config, not code
+fields:
+  email:  {from: "Email Address", transform: [strip, lower], required: true}
+  name:   {compute: "{First Name} {Last Name}", transform: [collapse_spaces]}
+  amount: {from: "Deal Value", cast: float, default: 0}
+```
+
+```python
+from agentkit import load_mapping
+
+mapper = load_mapping("examples/contacts.yaml")
+print(mapper.dry_run(csv_rows, key="email", existing=crm_contacts).report())
+# would create 41, update 3, leave 120, reject 2
+#   ~ ada@example.com: stage: 'lead' -> 'won'
+#   ! record 7, field 'amount': cannot cast 'lots' to float
+good = mapper.apply(csv_rows)          # .records to write, .errors is the fix list
+crm.write("contacts", good.records, upsert_on="email")
+```
+
 ## Roadmap
 
-YAML schema mapping, a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
+Next: a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 

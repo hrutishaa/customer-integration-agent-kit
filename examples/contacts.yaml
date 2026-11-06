@@ -1,0 +1,10 @@
+# Maps a customer's messy contacts export into the CRM contact shape.
+name: contacts_csv
+fields:
+  email:   {from: "Email Address", transform: [strip, lower], required: true}
+  name:    {compute: "{First Name} {Last Name}", transform: [collapse_spaces], required: true}
+  phone:   {from: "Phone", transform: [digits]}
+  company: {from: "Company", transform: [strip]}
+  stage:   {from: "Stage", transform: [strip, lower], default: lead}
+  amount:  {from: "Deal Value", cast: float, default: 0}
+  active:  {from: "Active?", cast: bool, default: true}
