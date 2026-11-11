@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "customer-integration-agent-kit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Forward-deployed toolkit for wiring LLM agents into customer systems: connectors, schema mapping, tool-calling, evals."
 readme = "README.md"
 license = { text = "MIT" }

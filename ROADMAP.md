@@ -16,9 +16,9 @@ Each milestone ships with tests. Checked items are on `main`.
 - [x] Mapping dry-run / diff mode
 
 ## M3: Agent
-- [ ] Expose connectors as LLM tools (JSON schema auto-generated)
-- [ ] Tool-calling loop with pluggable model provider (OpenAI-compatible / local)
-- [ ] Guardrails: read-only mode, write confirmation, max tool calls
+- [x] Expose connectors as LLM tools (JSON schema auto-generated)
+- [x] Tool-calling loop with pluggable model provider (OpenAI-compatible / local)
+- [x] Guardrails: read-only mode, write confirmation, max tool calls
 
 ## M4: Reliability
 - [ ] Idempotency store (SQLite) for dedup of webhook/agent writes

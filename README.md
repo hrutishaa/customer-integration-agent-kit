@@ -34,7 +34,7 @@ flowchart LR
     H --> I
 ```
 
-## What works today (v0.1)
+## What works today (v0.3)
 
 | Piece | Highlights |
 |---|---|
@@ -44,8 +44,8 @@ flowchart LR
 | `WebhookReceiver` | HMAC-SHA256 verified over the raw request bytes, constant-time compare, signed timestamp with a 5-minute window, replay protection that only marks events seen after the handler succeeds, zero-downtime secret rotation |
 | `SQLConnector` | SQLite / Postgres via SQLAlchemy Core, DB URL from an env var, table and column names checked against the live schema and every value bound (no SQL injection, even from an LLM), keyset-paginated batch reads, all-or-nothing transactional writes, idempotent upserts, `read_only` mode, single-SELECT `query()` for reports |
 | `CRMConnector` + mock Acme CRM | Follows opaque cursors page by page (stops on a repeated cursor or a `max_pages` cap instead of looping forever), incremental `sync()` with an `updated_since` watermark, upserts that search first and PATCH only changed fields, deterministic `Idempotency-Key` on creates so a re-run sync never duplicates, refuses ambiguous matches, and inherits 429/`Retry-After` backoff. `agentkit.mock.AcmeCRM` is a realistic in-process CRM (auth, rate limits, keyset cursors, 409/422 errors) for tests and demos |
-
 | `agentkit.mapping` | Declarative YAML field mappings (rename, cast, default, compute with a `{Field}` template, never `eval`), optional Pydantic validation, per-record error reports instead of a crashed batch, and a `dry_run` that previews creates / updates / unchanged with field-level diffs before anything is written |
+| `agentkit.agent` | Connectors exposed as LLM tools with JSON schemas generated from type hints (resource names become an `enum`, reads capped so one call can't flood the context), model arguments validated before anything runs, a tool-calling loop over any OpenAI-compatible API (OpenAI, Azure, Groq, vLLM, Ollama) or an offline `ScriptedProvider`, and guardrails: `read_only`, an approval callback for every write (writes are blocked by default), `max_tool_calls` / `max_steps` budgets, tool errors returned to the model instead of crashing the app, and a `Trace` of every call for audit logs |
 
 ## Quickstart
 
@@ -124,9 +124,27 @@ good = mapper.apply(csv_rows)          # .records to write, .errors is the fix l
 crm.write("contacts", good.records, upsert_on="email")
 ```
 
+```python
+from agentkit import CRMConnector
+from agentkit.agent import Agent, OpenAICompatibleProvider, ToolRegistry, connector_tools
+
+crm = CRMConnector("https://api.acme-crm.com", token_env="ACME_TOKEN")
+tools = ToolRegistry().add(*connector_tools(crm, resources=["contacts"]))
+model = OpenAICompatibleProvider("gpt-4o-mini")      # key from OPENAI_API_KEY, never logged
+# or: OpenAICompatibleProvider("llama3.1", base_url="http://localhost:11434/v1", api_key_env=None)
+
+agent = Agent(model, tools, confirm=lambda tool, args: ask_a_human(tool.name, args),
+              max_tool_calls=6)
+trace = agent.run("Mark ada@acme.com as won and add grace@acme.com")
+print(trace.answer)
+print(trace.summary())   # every tool call with ok / error / blocked
+```
+
+Try it offline with no key: `python examples/agent_demo.py` (a scripted model drives the mock CRM and asks you to approve the write).
+
 ## Roadmap
 
-Next: a tool-calling agent, an idempotency store, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
+Next: an idempotency store, structured logging, circuit breakers, evals, a sample customer demo, and Docker. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
